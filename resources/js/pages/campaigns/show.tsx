@@ -5,19 +5,22 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Link, router, Head } from '@inertiajs/react';
-import { ArrowLeft, Play, Pause, Edit, Trash2, Phone, Clock, CheckCircle2, XCircle, RefreshCw, BarChart3, Save, Bot, Sparkles } from 'lucide-react';
+import { ArrowLeft, Play, Pause, Edit, Trash2, Phone, Clock, CheckCircle2, XCircle, RefreshCw, BarChart3, Bot, Sparkles, MoreHorizontal, BookmarkPlus } from 'lucide-react';
 import CSVUploadZone from '@/components/campaigns/csv-upload-zone';
 import { DtmfAnalytics } from '@/components/campaigns/dtmf-analytics';
 import { useEffect, useState } from 'react';
 import { dashboard } from '@/routes';
 import { type BreadcrumbItem } from '@/types';
+import { cn } from '@/lib/utils';
 import axios from 'axios';
+import { toast } from 'sonner';
 import { ConfirmationModal } from '@/components/confirmation-modal';
 
 interface Call {
@@ -226,9 +229,9 @@ export default function CampaignShow({ campaign, dtmfStats }: Props) {
 
       setShowTemplateDialog(false);
       setTemplateData({ name: '', description: '', category: 'general' });
-      
+
       // Show success message
-      alert('Template created successfully!');
+      toast.success('Template saved successfully!');
     } catch {
       setTemplateError('Failed to create template');
     } finally {
@@ -273,205 +276,201 @@ export default function CampaignShow({ campaign, dtmfStats }: Props) {
     <AppLayout breadcrumbs={breadcrumbs}>
       <Head title={campaign.name} />
       <div className="mx-auto max-w-7xl space-y-6">
-        {/* Header */}
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="flex items-start gap-4">
+        {/* Header — 3-zone action bar */}
+        <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
+          {/* Zone 1: Identity */}
+          <div className="flex items-center gap-3 min-w-0">
             <Link href="/campaigns">
-              <Button variant="outline" size="icon" className="shrink-0">
-                <ArrowLeft className="h-4 w-4" />
+              <Button variant="ghost" size="sm" className="shrink-0">
+                <ArrowLeft className="size-4 mr-1" />Back
               </Button>
             </Link>
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-3">
-                <h1 className="text-2xl font-bold tracking-tight break-words lg:text-3xl">{campaign.name}</h1>
-                <Badge variant={statusConfig[campaign.status].variant} className="shrink-0">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-xl font-bold truncate">{campaign.name}</h1>
+                <Badge variant={statusConfig[campaign.status].variant}>
                   {statusConfig[campaign.status].label}
                 </Badge>
+                {campaign.status === 'running' && (
+                  <div className="flex items-center gap-1 text-xs text-primary animate-fade-in">
+                    <RefreshCw className="size-3 animate-spin" />
+                    <span>Live</span>
+                  </div>
+                )}
               </div>
-              <p className="mt-1 text-sm text-muted-foreground capitalize">
+              <p className="text-sm text-muted-foreground truncate mt-0.5 capitalize">
                 {campaign.type.replace('_', ' ')} Campaign
               </p>
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2 lg:shrink-0">
-            {campaign.status === 'running' && (
-              <Button variant="outline" size="icon" onClick={handleRefresh} disabled={isRefreshing}>
-                <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-              </Button>
-            )}
-
-            {/* Save as Template: Available for all campaigns */}
-            <Dialog open={showTemplateDialog} onOpenChange={setShowTemplateDialog}>
-              <DialogTrigger asChild>
-                <Button variant="outline">
-                  <Save className="mr-2 h-4 w-4" />
-                  Save as Template
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Save as Template</DialogTitle>
-                  <DialogDescription>
-                    Create a reusable template from this campaign configuration.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="template-name">Template Name *</Label>
-                    <Input
-                      id="template-name"
-                      value={templateData.name}
-                      onChange={(e) => setTemplateData({ ...templateData, name: e.target.value })}
-                      placeholder="e.g., Customer Follow-up Template"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="template-description">Description</Label>
-                    <Textarea
-                      id="template-description"
-                      value={templateData.description}
-                      onChange={(e) => setTemplateData({ ...templateData, description: e.target.value })}
-                      placeholder="Describe when to use this template..."
-                      rows={3}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="template-category">Category</Label>
-                    <Select
-                      value={templateData.category}
-                      onValueChange={(value) => setTemplateData({ ...templateData, category: value as typeof templateData.category })}
-                    >
-                      <SelectTrigger id="template-category">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="promotional">Promotional</SelectItem>
-                        <SelectItem value="notification">Notification</SelectItem>
-                        <SelectItem value="survey">Survey</SelectItem>
-                        <SelectItem value="lead_qualification">Lead Qualification</SelectItem>
-                        <SelectItem value="personalized">Personalized</SelectItem>
-                        <SelectItem value="general">General</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  {templateError && (
-                    <p className="text-sm text-red-500">{templateError}</p>
-                  )}
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setShowTemplateDialog(false)} disabled={isSavingTemplate}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleSaveAsTemplate} disabled={isSavingTemplate}>
-                    {isSavingTemplate ? 'Saving...' : 'Save Template'}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-
+          {/* Zone 2+3: Actions */}
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Analytics link (when data is available) */}
             {(campaign.total_called > 0 || ['running', 'completed'].includes(campaign.status)) && (
               <Link href={`/analytics/campaigns/${campaign.id}`}>
-                <Button variant="outline">
-                  <BarChart3 className="mr-2 h-4 w-4" />
+                <Button variant="outline" size="sm">
+                  <BarChart3 className="size-4 mr-2" />
                   Analytics
                 </Button>
               </Link>
             )}
 
-            {/* Edit: Only for draft or scheduled (not started yet) */}
-            {(campaign.status === 'draft' || (campaign.status === 'scheduled' && !campaign.started_at)) && (
-              <Link href={`/campaigns/${campaign.id}/edit`}>
-                <Button variant="outline">
-                  <Edit className="mr-2 h-4 w-4" />
-                  Edit
-                </Button>
-              </Link>
-            )}
-
-            {/* Launch: Only for draft campaigns */}
-            {campaign.status === 'draft' && (
-              <Button onClick={handleLaunch}>
-                <Play className="mr-2 h-4 w-4" />
-                Launch
-              </Button>
-            )}
-
-            {/* Pause/Stop: Only for running campaigns */}
-            {campaign.status === 'running' && (
-              <Button variant="outline" onClick={handlePause}>
-                <Pause className="mr-2 h-4 w-4" />
-                Pause
-              </Button>
-            )}
-
-            {/* Resume: Only for paused campaigns */}
-            {campaign.status === 'paused' && (
-              <Button onClick={handleResume}>
-                <Play className="mr-2 h-4 w-4" />
-                Resume
-              </Button>
-            )}
-
             {/* On-Demand Call: For testing (not for completed/failed campaigns) */}
             {!['completed', 'failed'].includes(campaign.status) && (
-              <Button variant="secondary" onClick={handleOnDemandCall}>
-                <Phone className="mr-2 h-4 w-4" />
-                On Demand Start
+              <Button variant="secondary" size="sm" onClick={handleOnDemandCall}>
+                <Phone className="size-4 mr-2" />
+                On Demand
               </Button>
             )}
 
-            {/* Delete: Only allowed for draft, completed, or failed campaigns */}
-            {['draft', 'completed', 'failed'].includes(campaign.status) && (
-              <Button variant="destructive" onClick={handleDelete}>
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete
+            {/* Primary action based on status */}
+            {campaign.status === 'draft' && (
+              <Button onClick={handleLaunch}>
+                <Play className="size-4 mr-2" />Launch
               </Button>
             )}
+            {campaign.status === 'running' && (
+              <Button variant="outline" onClick={handlePause}>
+                <Pause className="size-4 mr-2" />Pause
+              </Button>
+            )}
+            {(campaign.status === 'paused' || campaign.status === 'completed') && (
+              <Button onClick={handleResume}>
+                <Play className="size-4 mr-2" />Resume
+              </Button>
+            )}
+
+            {/* More actions dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <MoreHorizontal className="size-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52">
+                <DropdownMenuItem onClick={handleRefresh}>
+                  <RefreshCw className="size-4 mr-2" />Refresh Data
+                </DropdownMenuItem>
+                {(campaign.status === 'draft' || (campaign.status === 'scheduled' && !campaign.started_at)) && (
+                  <DropdownMenuItem asChild>
+                    <Link href={`/campaigns/${campaign.id}/edit`}>
+                      <Edit className="size-4 mr-2" />Edit Campaign
+                    </Link>
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem onClick={() => setShowTemplateDialog(true)}>
+                  <BookmarkPlus className="size-4 mr-2" />Save as Template
+                </DropdownMenuItem>
+                {['draft', 'completed', 'failed'].includes(campaign.status) && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem variant="destructive" onClick={handleDelete}>
+                      <Trash2 className="size-4 mr-2" />Delete Campaign
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
+        {/* Save as Template Dialog */}
+        <Dialog open={showTemplateDialog} onOpenChange={setShowTemplateDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Save as Template</DialogTitle>
+              <DialogDescription>
+                Create a reusable template from this campaign configuration.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="template-name">Template Name *</Label>
+                <Input
+                  id="template-name"
+                  value={templateData.name}
+                  onChange={(e) => setTemplateData({ ...templateData, name: e.target.value })}
+                  placeholder="e.g., Customer Follow-up Template"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="template-description">Description</Label>
+                <Textarea
+                  id="template-description"
+                  value={templateData.description}
+                  onChange={(e) => setTemplateData({ ...templateData, description: e.target.value })}
+                  placeholder="Describe when to use this template..."
+                  rows={3}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="template-category">Category</Label>
+                <Select
+                  value={templateData.category}
+                  onValueChange={(value) => setTemplateData({ ...templateData, category: value as typeof templateData.category })}
+                >
+                  <SelectTrigger id="template-category">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="promotional">Promotional</SelectItem>
+                    <SelectItem value="notification">Notification</SelectItem>
+                    <SelectItem value="survey">Survey</SelectItem>
+                    <SelectItem value="lead_qualification">Lead Qualification</SelectItem>
+                    <SelectItem value="personalized">Personalized</SelectItem>
+                    <SelectItem value="general">General</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {templateError && (
+                <p className="text-sm text-red-500">{templateError}</p>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowTemplateDialog(false)} disabled={isSavingTemplate}>
+                Cancel
+              </Button>
+              <Button onClick={handleSaveAsTemplate} disabled={isSavingTemplate}>
+                {isSavingTemplate ? 'Saving...' : 'Save Template'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         {/* Stats Grid */}
         <div className="grid gap-4 md:grid-cols-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardDescription>Total Contacts</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{campaign.total_contacts || campaign.campaign_contacts_count}</div>
-            </CardContent>
-          </Card>
+          {/* Total Contacts */}
+          <div className="relative bg-white/70 dark:bg-white/5 backdrop-blur-md border border-white/20 dark:border-white/10 rounded-xl p-4 shadow-sm overflow-hidden">
+            <div className={cn("absolute left-0 top-0 bottom-0 w-[3px] rounded-l-xl", "bg-primary")} />
+            <p className="text-sm text-muted-foreground">Total Contacts</p>
+            <div className="text-2xl font-bold mt-1">{campaign.total_contacts || campaign.campaign_contacts_count}</div>
+          </div>
 
-          <Card>
-            <CardHeader className="pb-3">
-              <CardDescription>Called</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{campaign.total_called}</div>
-              <Progress value={getProgress()} className="mt-2" />
-            </CardContent>
-          </Card>
+          {/* Called */}
+          <div className="relative bg-white/70 dark:bg-white/5 backdrop-blur-md border border-white/20 dark:border-white/10 rounded-xl p-4 shadow-sm overflow-hidden">
+            <div className={cn("absolute left-0 top-0 bottom-0 w-[3px] rounded-l-xl", "bg-primary")} />
+            <p className="text-sm text-muted-foreground">Called</p>
+            <div className="text-2xl font-bold mt-1">{campaign.total_called}</div>
+            <Progress value={getProgress()} className="mt-2" />
+          </div>
 
-          <Card>
-            <CardHeader className="pb-3">
-              <CardDescription>Answered</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-baseline gap-2">
-                <div className="text-2xl font-bold">{campaign.total_answered}</div>
-                <div className="text-sm text-slate-500">({getAnswerRate()}%)</div>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Answered */}
+          <div className="relative bg-white/70 dark:bg-white/5 backdrop-blur-md border border-white/20 dark:border-white/10 rounded-xl p-4 shadow-sm overflow-hidden">
+            <div className={cn("absolute left-0 top-0 bottom-0 w-[3px] rounded-l-xl", "bg-emerald-500")} />
+            <p className="text-sm text-muted-foreground">Answered</p>
+            <div className="flex items-baseline gap-2 mt-1">
+              <div className="text-2xl font-bold">{campaign.total_answered}</div>
+              <div className="text-sm text-slate-500">({getAnswerRate()}%)</div>
+            </div>
+          </div>
 
-          <Card>
-            <CardHeader className="pb-3">
-              <CardDescription>Failed</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{campaign.total_failed}</div>
-            </CardContent>
-          </Card>
+          {/* Failed */}
+          <div className="relative bg-white/70 dark:bg-white/5 backdrop-blur-md border border-white/20 dark:border-white/10 rounded-xl p-4 shadow-sm overflow-hidden">
+            <div className={cn("absolute left-0 top-0 bottom-0 w-[3px] rounded-l-xl", "bg-red-500")} />
+            <p className="text-sm text-muted-foreground">Failed</p>
+            <div className="text-2xl font-bold mt-1">{campaign.total_failed}</div>
+          </div>
         </div>
 
         {/* DTMF Analytics - Show if DTMF is enabled and has responses */}
@@ -582,7 +581,7 @@ export default function CampaignShow({ campaign, dtmfStats }: Props) {
         </Card>
 
         {/* Variable Dashboard - Beautiful UI with detailed information */}
-        {(campaign.expected_variables?.length > 0 || Object.keys(campaign.campaign_variables || {}).length > 0) && (
+        {((campaign.expected_variables?.length ?? 0) > 0 || Object.keys(campaign.campaign_variables || {}).length > 0) && (
           <Card className="border-2 border-blue-200 dark:border-blue-800">
             <CardHeader className="border-b border-border">
               <div className="flex items-center justify-between">
@@ -645,7 +644,7 @@ export default function CampaignShow({ campaign, dtmfStats }: Props) {
               )}
 
               {/* Contact-Level Variables */}
-              {campaign.expected_variables?.length > 0 && (
+              {(campaign.expected_variables?.length ?? 0) > 0 && (
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
                     <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">
@@ -656,7 +655,7 @@ export default function CampaignShow({ campaign, dtmfStats }: Props) {
                     </span>
                   </div>
                   <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-4">
-                    {campaign.expected_variables.map((variable) => (
+                    {campaign.expected_variables?.map((variable) => (
                       <div
                         key={variable}
                         className="group relative overflow-hidden rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20 p-4 transition-all hover:border-emerald-300 dark:hover:border-emerald-700 hover:shadow-md"
