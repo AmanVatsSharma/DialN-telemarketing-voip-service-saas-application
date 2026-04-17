@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Head, router } from '@inertiajs/react';
-import { Bot, Phone, TrendingUp, DollarSign, Clock, Edit, Trash2, Power, PlayCircle, StopCircle, Settings, PhoneCall, AlertTriangle, Archive } from 'lucide-react';
+import { Bot, Phone, TrendingUp, DollarSign, Clock, Edit, Trash2, Power, PlayCircle, StopCircle, Settings, PhoneCall, AlertTriangle, Archive, Copy } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
@@ -42,14 +42,14 @@ export default function ShowAiAgent({ id }: Props) {
     loadAgent();
     loadRecentCalls();
     loadActiveCalls();
-    
+
     // Poll for active calls every 5 seconds
     const interval = setInterval(() => {
       if (!showDeleteModal) {
         loadActiveCalls();
       }
     }, 5000);
-    
+
     return () => clearInterval(interval);
   }, [id]);
 
@@ -141,6 +141,11 @@ export default function ShowAiAgent({ id }: Props) {
     loadAgent(); // Refresh stats
   };
 
+  const copyToClipboard = (value: string) => {
+    navigator.clipboard.writeText(value);
+    toast.success('Copied to clipboard');
+  };
+
   if (loading) {
     return (
       <AppLayout breadcrumbs={breadcrumbs}>
@@ -161,7 +166,7 @@ export default function ShowAiAgent({ id }: Props) {
         <div className="flex h-full flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
           <div className="flex flex-col items-center justify-center h-96">
             <h2 className="text-2xl font-bold mb-2">AI Agent Not Found</h2>
-            <p className="text-muted-foreground mb-4">The agent you're looking for doesn't exist.</p>
+            <p className="text-muted-foreground mb-4">The agent you&apos;re looking for doesn&apos;t exist.</p>
             <Button onClick={() => router.visit('/ai-agents')}>
               Back to AI Agents
             </Button>
@@ -180,7 +185,7 @@ export default function ShowAiAgent({ id }: Props) {
           <div className="flex items-center space-x-3">
             <Bot className="h-8 w-8 text-primary" />
             <div>
-              <Heading 
+              <Heading
                 title={agent.name}
                 description={agent.description || 'AI-powered conversational agent'}
               />
@@ -223,10 +228,6 @@ export default function ShowAiAgent({ id }: Props) {
               <Edit className="mr-2 h-4 w-4" />
               Edit
             </Button>
-            <Button variant="outline" onClick={() => setShowDeleteModal(true)}>
-              <Trash2 className="mr-2 h-4 w-4" />
-              Delete
-            </Button>
           </div>
         </div>
 
@@ -245,48 +246,48 @@ export default function ShowAiAgent({ id }: Props) {
           <Badge variant="outline">{agent.type}</Badge>
         </div>
 
-        {/* Stats Cards */}
+        {/* Glassmorphism Stats Cards */}
         {stats && (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Calls</CardTitle>
+            {/* Total Calls */}
+            <div className="relative bg-white/70 dark:bg-white/5 backdrop-blur-md border border-white/20 dark:border-white/10 rounded-xl p-5 shadow-sm overflow-hidden">
+              <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-xl bg-primary" />
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-sm font-medium text-muted-foreground">Total Calls</p>
                 <Phone className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.total_calls || 0}</div>
-              </CardContent>
-            </Card>
+              </div>
+              <div className="text-2xl font-bold">{stats.total_calls || 0}</div>
+            </div>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Success Rate</CardTitle>
+            {/* Success Rate */}
+            <div className="relative bg-white/70 dark:bg-white/5 backdrop-blur-md border border-white/20 dark:border-white/10 rounded-xl p-5 shadow-sm overflow-hidden">
+              <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-xl bg-emerald-500" />
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-sm font-medium text-muted-foreground">Success Rate</p>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.success_rate || 0}%</div>
-              </CardContent>
-            </Card>
+              </div>
+              <div className="text-2xl font-bold">{stats.success_rate || 0}%</div>
+            </div>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Cost</CardTitle>
+            {/* Total Cost */}
+            <div className="relative bg-white/70 dark:bg-white/5 backdrop-blur-md border border-white/20 dark:border-white/10 rounded-xl p-5 shadow-sm overflow-hidden">
+              <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-xl bg-amber-500" />
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-sm font-medium text-muted-foreground">Total Cost</p>
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">${stats.total_cost?.toFixed(2) || '0.00'}</div>
-              </CardContent>
-            </Card>
+              </div>
+              <div className="text-2xl font-bold">${stats.total_cost?.toFixed(2) || '0.00'}</div>
+            </div>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Avg Duration</CardTitle>
+            {/* Avg Duration */}
+            <div className="relative bg-white/70 dark:bg-white/5 backdrop-blur-md border border-white/20 dark:border-white/10 rounded-xl p-5 shadow-sm overflow-hidden">
+              <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-xl bg-blue-500" />
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-sm font-medium text-muted-foreground">Avg Duration</p>
                 <Clock className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{Math.round(stats.average_duration || 0)}s</div>
-              </CardContent>
-            </Card>
+              </div>
+              <div className="text-2xl font-bold">{Math.round(stats.average_duration || 0)}s</div>
+            </div>
           </div>
         )}
 
@@ -340,13 +341,31 @@ export default function ShowAiAgent({ id }: Props) {
                   {agent.phone_number && (
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Phone Number</p>
-                      <p className="text-base">{agent.phone_number}</p>
+                      <div className="flex items-center gap-1">
+                        <p className="text-base">{agent.phone_number}</p>
+                        <button
+                          onClick={() => copyToClipboard(agent.phone_number!)}
+                          className="p-1 hover:bg-muted rounded transition-colors ml-1"
+                          title="Copy phone number"
+                        >
+                          <Copy className="size-3.5 text-muted-foreground" />
+                        </button>
+                      </div>
                     </div>
                   )}
                   {agent.transfer_number && (
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Transfer Number</p>
-                      <p className="text-base">{agent.transfer_number}</p>
+                      <div className="flex items-center gap-1">
+                        <p className="text-base">{agent.transfer_number}</p>
+                        <button
+                          onClick={() => copyToClipboard(agent.transfer_number!)}
+                          className="p-1 hover:bg-muted rounded transition-colors ml-1"
+                          title="Copy transfer number"
+                        >
+                          <Copy className="size-3.5 text-muted-foreground" />
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -356,7 +375,7 @@ export default function ShowAiAgent({ id }: Props) {
             <Card>
               <CardHeader>
                 <CardTitle>System Prompt</CardTitle>
-                <CardDescription>The instructions that guide this AI agent's behavior</CardDescription>
+                <CardDescription>The instructions that guide this AI agent&apos;s behavior</CardDescription>
               </CardHeader>
               <CardContent>
                 <pre className="whitespace-pre-wrap text-sm bg-muted p-4 rounded-md">
@@ -364,6 +383,20 @@ export default function ShowAiAgent({ id }: Props) {
                 </pre>
               </CardContent>
             </Card>
+
+            {/* Danger Zone */}
+            <div className="mt-8 pt-8 border-t border-destructive/20">
+              <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-5">
+                <h3 className="text-sm font-semibold text-destructive mb-1">Danger Zone</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Once you delete this agent, all associated data will be permanently removed.
+                </p>
+                <Button variant="destructive" size="sm" onClick={() => setShowDeleteModal(true)}>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete Agent
+                </Button>
+              </div>
+            </div>
           </TabsContent>
 
           <TabsContent value="calls" className="space-y-4">
@@ -459,7 +492,7 @@ export default function ShowAiAgent({ id }: Props) {
                   <p className="font-semibold text-foreground mb-2">
                     You are about to delete <strong>{agent?.name}</strong>
                   </p>
-                  
+
                   {stats && stats.total_calls > 0 && (
                     <div className="bg-destructive/10 border border-destructive/20 rounded-md p-4 space-y-2">
                       <p className="font-semibold text-destructive">⚠️ This will PERMANENTLY delete:</p>
@@ -471,7 +504,7 @@ export default function ShowAiAgent({ id }: Props) {
                       </ul>
                     </div>
                   )}
-                  
+
                   <div className="bg-muted rounded-md p-4 mt-4 space-y-2">
                     <p className="font-semibold">💡 Recommended Alternative:</p>
                     <p className="text-sm">
@@ -497,8 +530,8 @@ export default function ShowAiAgent({ id }: Props) {
                   Archive Instead (Recommended)
                 </Button>
               )}
-              <Button 
-                variant="destructive" 
+              <Button
+                variant="destructive"
                 onClick={deleteAgent}
                 disabled={stats && stats.total_calls > 0}
               >
