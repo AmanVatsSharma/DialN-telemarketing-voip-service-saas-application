@@ -1,16 +1,16 @@
 import { useState, useEffect } from 'react';
 import { Plus, Bot, Phone, TrendingUp, DollarSign, Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Head, router } from '@inertiajs/react';
+import { Input } from '@/components/ui/input';
+import { Head, Link, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import Heading from '@/components/heading';
 import axios from 'axios';
 import { dashboard } from '@/routes';
 import { type BreadcrumbItem } from '@/types';
 import type { AiAgent, AiAgentStats } from '@/types/ai-agent';
+import { toast } from 'sonner';
 
 const breadcrumbs: BreadcrumbItem[] = [
   {
@@ -28,8 +28,8 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 export default function AiAgentsDashboard() {
   const [agents, setAgents] = useState<AiAgent[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<any>({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [stats, setStats] = useState<Record<number, AiAgentStats>>({});
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredAgents = agents.filter(agent => {
@@ -59,7 +59,7 @@ export default function AiAgentsDashboard() {
     } catch (error) {
       console.error('Failed to load AI agents:', error);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -78,13 +78,28 @@ export default function AiAgentsDashboard() {
     });
   }, [agents]);
 
-  if (loading) {
+  if (isLoading) {
     return (
       <AppLayout breadcrumbs={breadcrumbs}>
         <Head title="AI Agents" />
         <div className="flex h-full flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
-          <div className="flex items-center justify-center h-96">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {[0, 1, 2].map(i => (
+              <div key={i} className="bg-card border rounded-xl p-5 space-y-4 animate-pulse">
+                <div className="flex items-center gap-3">
+                  <div className="size-12 bg-muted rounded-xl" />
+                  <div className="space-y-2 flex-1">
+                    <div className="h-4 bg-muted rounded w-2/3" />
+                    <div className="h-3 bg-muted rounded w-1/2" />
+                  </div>
+                </div>
+                <div className="h-1 bg-muted rounded-full" />
+                <div className="flex gap-2">
+                  <div className="h-8 bg-muted rounded flex-1" />
+                  <div className="size-8 bg-muted rounded" />
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </AppLayout>
@@ -96,8 +111,8 @@ export default function AiAgentsDashboard() {
       <Head title="AI Agents" />
       <div className="flex h-full flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <Heading 
-            title="AI Agents" 
+          <Heading
+            title="AI Agents"
             description="Manage your AI-powered calling agents for inbound and outbound automation"
           />
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -127,124 +142,150 @@ export default function AiAgentsDashboard() {
           </div>
         </div>
 
-      {agents.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <div className="rounded-full bg-primary/10 p-6 mb-4">
-              <Bot className="h-12 w-12 text-primary" />
+        {agents.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="relative mb-5">
+              <div className="absolute inset-0 bg-primary/10 rounded-full blur-2xl scale-150" />
+              <div className="relative bg-muted/40 rounded-2xl p-5">
+                <Bot className="size-14 text-muted-foreground/50" strokeWidth={1.5} />
+              </div>
             </div>
-            <h3 className="text-xl font-semibold mb-2">No AI Agents Yet</h3>
-            <p className="text-muted-foreground mb-6 text-center max-w-sm">
-              Create your first AI agent to start automating inbound and outbound calls with intelligent conversations
+            <h3 className="text-lg font-semibold mb-2">No AI Agents yet</h3>
+            <p className="text-muted-foreground text-sm max-w-xs mb-6">
+              Create your first AI agent to handle calls with natural conversation.
             </p>
-            <Button onClick={() => router.visit('/ai-agents/create')} size="lg">
-              <Plus className="mr-2 h-4 w-4" />
-              Create Your First AI Agent
+            <Button asChild>
+              <Link href="/ai-agents/create">
+                <Plus className="size-4 mr-2" />
+                Create AI Agent
+              </Link>
             </Button>
-          </CardContent>
-        </Card>
-      ) : filteredAgents.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <div className="rounded-full bg-muted p-6 mb-4">
-              <Search className="h-12 w-12 text-muted-foreground" />
+          </div>
+        ) : filteredAgents.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="relative mb-5">
+              <div className="relative bg-muted/40 rounded-2xl p-5">
+                <Search className="size-14 text-muted-foreground/50" strokeWidth={1.5} />
+              </div>
             </div>
-            <h3 className="text-xl font-semibold mb-2">No agents found</h3>
-            <p className="text-muted-foreground mb-6 text-center max-w-sm">
-              No agents match your search criteria "{searchTerm}". Try adjusting your search.
+            <h3 className="text-lg font-semibold mb-2">No agents found</h3>
+            <p className="text-muted-foreground text-sm max-w-xs mb-6">
+              No agents match your search criteria &ldquo;{searchTerm}&rdquo;. Try adjusting your search.
             </p>
             <Button onClick={handleClearSearch} variant="outline">
               Clear Search
             </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {filteredAgents.map((agent) => (
-            <Card
-              key={agent.id}
-              className="cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => router.visit(`/ai-agents/${agent.id}`)}
-            >
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center space-x-2">
-                    <Bot className="h-5 w-5" />
-                    <CardTitle className="text-lg">{agent.name}</CardTitle>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {filteredAgents.map((agent, index) => {
+              const agentStats = stats[agent.id];
+              const activeCalls = agent.active_calls_count || 0;
+              const successRate = agentStats?.success_rate || 0;
+
+              return (
+                <div
+                  key={agent.id}
+                  className="group relative bg-white/70 dark:bg-white/5 backdrop-blur-sm border border-white/20 dark:border-white/10 rounded-xl p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 cursor-pointer animate-fade-in"
+                  style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}
+                  onClick={() => router.visit(`/ai-agents/${agent.id}`)}
+                >
+                  {/* Header row */}
+                  <div className="flex items-start gap-3 mb-3">
+                    {/* Gradient Avatar with Live Indicator */}
+                    <div className="relative size-12 rounded-xl bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white font-bold text-lg shadow-sm shrink-0">
+                      {agent.name.charAt(0).toUpperCase()}
+                      {activeCalls > 0 && (
+                        <span className="absolute -top-1 -right-1 size-3 bg-green-500 rounded-full border-2 border-background animate-pulse" />
+                      )}
+                    </div>
+
+                    {/* Name & description */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-semibold text-base leading-tight truncate">{agent.name}</p>
+                        <Badge variant={agent.active ? 'default' : 'secondary'} className="shrink-0">
+                          {agent.active ? 'Active' : 'Inactive'}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground line-clamp-1 mt-0.5">
+                        {agent.description || 'No description'}
+                      </p>
+                    </div>
                   </div>
-                  <Badge variant={agent.active ? 'default' : 'secondary'}>
-                    {agent.active ? 'Active' : 'Inactive'}
-                  </Badge>
-                </div>
-                <CardDescription className="line-clamp-2">
-                  {agent.description || 'No description'}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Type</span>
-                    <Badge variant="outline">{agent.type}</Badge>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Model</span>
-                    <span className="font-medium">{agent.model}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Voice</span>
-                    <span className="font-medium">{agent.voice}</span>
-                  </div>
-                  {agent.phone_number && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Phone Number</span>
-                      <Badge variant="outline" className="font-mono">
-                        <Phone className="mr-1 h-3 w-3" />
-                        {agent.phone_number}
-                      </Badge>
+
+                  {/* Live Call Badge */}
+                  {activeCalls > 0 && (
+                    <div className="flex items-center gap-1.5 px-2 py-0.5 bg-red-500/10 border border-red-500/20 rounded-full w-fit mb-3">
+                      <span className="size-1.5 rounded-full bg-red-500 animate-pulse" />
+                      <span className="text-xs font-semibold text-red-600 dark:text-red-400">LIVE</span>
+                      <span className="text-xs text-red-500">{activeCalls}</span>
                     </div>
                   )}
 
-                  {stats[agent.id] && (
-                    <>
-                      <div className="border-t pt-3 mt-3">
-                        <div className="grid grid-cols-2 gap-2">
-                          <div className="flex items-center space-x-2">
-                            <Phone className="h-4 w-4 text-muted-foreground" />
-                            <div>
-                              <p className="text-xs text-muted-foreground">Total Calls</p>
-                              <p className="font-semibold">{stats[agent.id].total_calls || 0}</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                            <div>
-                              <p className="text-xs text-muted-foreground">Success Rate</p>
-                              <p className="font-semibold">{stats[agent.id].success_rate || 0}%</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <DollarSign className="h-4 w-4 text-muted-foreground" />
-                            <div>
-                              <p className="text-xs text-muted-foreground">Total Cost</p>
-                              <p className="font-semibold">${stats[agent.id].total_cost?.toFixed(2) || '0.00'}</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <div>
-                              <p className="text-xs text-muted-foreground">Avg Duration</p>
-                              <p className="font-semibold">{Math.round(stats[agent.id].average_duration || 0)}s</p>
-                            </div>
-                          </div>
-                        </div>
+                  {/* Meta info */}
+                  <div className="space-y-1.5 text-sm mb-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Type</span>
+                      <Badge variant="outline">{agent.type}</Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Model</span>
+                      <span className="font-medium truncate max-w-[140px]">{agent.model}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Voice</span>
+                      <span className="font-medium">{agent.voice}</span>
+                    </div>
+                    {agent.phone_number && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Phone</span>
+                        <Badge variant="outline" className="font-mono">
+                          <Phone className="mr-1 h-3 w-3" />
+                          {agent.phone_number}
+                        </Badge>
                       </div>
-                    </>
+                    )}
+                  </div>
+
+                  {/* Stats row */}
+                  {agentStats && (
+                    <div className="flex items-center gap-4 text-sm border-t pt-3 mb-3">
+                      <div className="flex items-center gap-1.5">
+                        <Phone className="size-3.5 text-muted-foreground" />
+                        <span className="font-medium">{agentStats.total_calls || 0}</span>
+                        <span className="text-muted-foreground text-xs">calls</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <DollarSign className="size-3.5 text-muted-foreground" />
+                        <span className="font-medium">${agentStats.total_cost?.toFixed(2) || '0.00'}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 ml-auto">
+                        <TrendingUp className="size-3.5 text-muted-foreground" />
+                        <span className="font-medium">{Math.round(agentStats.average_duration || 0)}s</span>
+                        <span className="text-muted-foreground text-xs">avg</span>
+                      </div>
+                    </div>
                   )}
+
+                  {/* Performance Mini-Bar */}
+                  <div className="space-y-1.5 mt-3">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">Success Rate</span>
+                      <span className="font-medium">{successRate.toFixed(1)}%</span>
+                    </div>
+                    <div className="h-1 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-700"
+                        style={{ width: `${Math.min(successRate, 100)}%` }}
+                      />
+                    </div>
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+              );
+            })}
+          </div>
+        )}
       </div>
     </AppLayout>
   );
